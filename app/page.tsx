@@ -17,6 +17,7 @@ import {
   Trash2,
   Square,
   CheckSquare,
+  Building2,
 } from "lucide-react";
 import Link from "next/link";
 import StatCard from "@/components/StatCard";
@@ -153,6 +154,15 @@ export default function Dashboard() {
     acceptees: candidatures.filter((c) => c.statut === "Acceptée").length,
   };
 
+  const parEntreprise = Object.entries(
+    candidatures.reduce((acc, c) => {
+      acc[c.entreprise] = acc[c.entreprise] || { total: 0, statuts: {} };
+      acc[c.entreprise].total += 1;
+      acc[c.entreprise].statuts[c.statut] = (acc[c.entreprise].statuts[c.statut] || 0) + 1;
+      return acc;
+    }, {} as Record<string, { total: number; statuts: Record<string, number> }>)
+  ).sort((a, b) => b[1].total - a[1].total);
+
   return (
     <div className="grid-bg" style={{ minHeight: "calc(100vh - 64px)", padding: "2rem" }}>
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
@@ -188,6 +198,87 @@ export default function Dashboard() {
           <StatCard label="Entretiens" value={stats.entretiens} icon={Users} accent="yellow" delay={0.2} />
           <StatCard label="Acceptées" value={stats.acceptees} icon={CheckCircle} accent="green" delay={0.3} />
         </div>
+
+        {/* Par entreprise */}
+        {parEntreprise.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.33 }}
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: "12px",
+              padding: "1.25rem 1.5rem",
+              marginBottom: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+              <Building2 size={16} color="var(--cyan)" />
+              <span style={{ color: "var(--cyan)", fontWeight: "600", fontSize: "0.875rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                Par entreprise
+              </span>
+              <span style={{ color: "var(--muted)", fontSize: "0.75rem", marginLeft: "auto" }}>
+                {parEntreprise.length} entreprise{parEntreprise.length > 1 ? "s" : ""}
+              </span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+              {parEntreprise.map(([entreprise, data]) => (
+                <div
+                  key={entreprise}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                    padding: "0.5rem 0.75rem",
+                    borderRadius: "8px",
+                    background: "var(--surface2)",
+                  }}
+                >
+                  <span style={{ flex: 1, fontSize: "0.875rem", color: "var(--text)", fontWeight: "500" }}>
+                    {entreprise}
+                  </span>
+                  <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                    {Object.entries(data.statuts).map(([statut, count]) => (
+                      <span
+                        key={statut}
+                        style={{
+                          fontSize: "0.7rem",
+                          padding: "0.15rem 0.5rem",
+                          borderRadius: "9999px",
+                          fontWeight: "600",
+                          background:
+                            statut === "Acceptée" ? "#22c55e22" :
+                            statut === "Refusée" ? "#ef444422" :
+                            statut === "Entretien" ? "#eab30822" :
+                            statut === "Relance" ? "#a855f722" :
+                            "var(--cyan-dim)",
+                          color:
+                            statut === "Acceptée" ? "#22c55e" :
+                            statut === "Refusée" ? "#ef4444" :
+                            statut === "Entretien" ? "#eab308" :
+                            statut === "Relance" ? "#a855f7" :
+                            "var(--cyan)",
+                        }}
+                      >
+                        {statut} ×{count}
+                      </span>
+                    ))}
+                  </div>
+                  <span style={{
+                    fontSize: "0.8rem",
+                    fontWeight: "700",
+                    color: data.total > 1 ? "var(--cyan)" : "var(--muted)",
+                    minWidth: "1.5rem",
+                    textAlign: "right",
+                  }}>
+                    {data.total}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         {/* Widget Rappels à venir */}
         {rappels.length > 0 && (
