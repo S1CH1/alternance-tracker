@@ -105,7 +105,8 @@ export default function Dashboard() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ texte: newTodo }),
     });
-    setTodos((prev) => [...prev, await res.json()]);
+    const todo = await res.json();
+    setTodos((prev) => [...prev, todo]);
     setNewTodo("");
   };
 
