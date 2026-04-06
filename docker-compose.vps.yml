@@ -1,0 +1,26 @@
+services:
+  alternance-tracker:
+    image: ghcr.io/s1ch1/alternance-tracker:latest
+    container_name: alternance-tracker
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/data/prod.db
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.alternance.rule=Host(`alternance.sachaveillon.com`)"
+      - "traefik.http.routers.alternance.entrypoints=websecure"
+      - "traefik.http.routers.alternance.tls=true"
+      - "traefik.http.routers.alternance.tls.certresolver=letsencrypt"
+      - "traefik.http.services.alternance.loadbalancer.server.port=3001"
+      - "traefik.http.routers.alternance.middlewares=alternance-auth"
+      - "traefik.http.middlewares.alternance-auth.basicauth.users=${BASIC_AUTH_USERS}"
+
+networks:
+  web:
+    external: true

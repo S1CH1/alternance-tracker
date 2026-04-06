@@ -35,12 +35,16 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { statut, notes, ville } = body;
+    const { statut, notes, ville, entreprise, poste, lienOffre, dateEnvoi } = body;
 
     const data: Record<string, string> = {};
     if (statut !== undefined) data.statut = statut;
     if (notes !== undefined) data.notes = notes;
     if (ville !== undefined) data.ville = ville;
+    if (entreprise !== undefined) data.entreprise = entreprise;
+    if (poste !== undefined) data.poste = poste;
+    if (lienOffre !== undefined) data.lienOffre = lienOffre;
+    if (dateEnvoi !== undefined) data.dateEnvoi = dateEnvoi;
 
     const candidature = await prisma.candidature.update({
       where: { id: parseInt(id) },

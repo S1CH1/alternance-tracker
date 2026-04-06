@@ -14,6 +14,8 @@ import {
   Save,
   ExternalLink,
   ChevronDown,
+  Pencil,
+  X,
 } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 
@@ -43,6 +45,9 @@ export default function CandidatureDetail() {
   const [savedNotes, setSavedNotes] = useState(false);
   const [showStatutMenu, setShowStatutMenu] = useState(false);
   const [changingStatut, setChangingStatut] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({ entreprise: "", poste: "", ville: "", lienOffre: "", dateEnvoi: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
     const fetchCandidature = async () => {
@@ -55,6 +60,13 @@ export default function CandidatureDetail() {
         const data = await res.json();
         setCandidature(data);
         setNotes(data.notes || "");
+        setEditForm({
+          entreprise: data.entreprise,
+          poste: data.poste,
+          ville: data.ville || "",
+          lienOffre: data.lienOffre || "",
+          dateEnvoi: data.dateEnvoi.slice(0, 10),
+        });
       } catch {
         router.push("/");
       } finally {
@@ -76,6 +88,28 @@ export default function CandidatureDetail() {
       setTimeout(() => setSavedNotes(false), 2000);
     } finally {
       setSavingNotes(false);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/candidatures/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entreprise: editForm.entreprise,
+          poste: editForm.poste,
+          ville: editForm.ville || null,
+          lienOffre: editForm.lienOffre || null,
+          dateEnvoi: new Date(editForm.dateEnvoi).toISOString(),
+        }),
+      });
+      const updated = await res.json();
+      setCandidature((prev) => prev ? { ...prev, ...updated } : prev);
+      setEditMode(false);
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -161,31 +195,110 @@ export default function CandidatureDetail() {
           />
 
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
-                <Building2 size={20} color="var(--cyan)" />
-                <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: "700", color: "var(--text)" }}>
-                  {candidature.entreprise}
-                </h1>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", color: "var(--muted)" }}>
-                <Briefcase size={16} />
-                <span style={{ fontSize: "1rem" }}>{candidature.poste}</span>
-                {candidature.ville && (
-                  <>
-                    <span style={{ color: "var(--border)" }}>·</span>
-                    <MapPin size={14} />
-                    <span style={{ fontSize: "0.95rem" }}>{candidature.ville}</span>
-                  </>
-                )}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", color: "var(--muted)", marginTop: "0.5rem" }}>
-                <Calendar size={14} />
-                <span style={{ fontSize: "0.85rem" }}>Envoyée le {date}</span>
-              </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {editMode ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {[
+                    { key: "entreprise", icon: <Building2 size={16} color="var(--cyan)" />, placeholder: "Entreprise" },
+                    { key: "poste", icon: <Briefcase size={16} />, placeholder: "Poste" },
+                    { key: "ville", icon: <MapPin size={16} />, placeholder: "Ville (optionnel)" },
+                    { key: "lienOffre", icon: <LinkIcon size={16} />, placeholder: "Lien de l'offre (optionnel)" },
+                  ].map(({ key, icon, placeholder }) => (
+                    <div key={key} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <span style={{ color: "var(--muted)", flexShrink: 0 }}>{icon}</span>
+                      <input
+                        value={editForm[key as keyof typeof editForm]}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, [key]: e.target.value }))}
+                        placeholder={placeholder}
+                        style={{
+                          background: "var(--surface2)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "6px",
+                          padding: "0.4rem 0.75rem",
+                          color: "var(--text)",
+                          fontSize: key === "entreprise" ? "1.1rem" : "0.9rem",
+                          fontWeight: key === "entreprise" ? "700" : "400",
+                          outline: "none",
+                          width: "100%",
+                        }}
+                        onFocus={(e) => (e.target.style.borderColor = "var(--cyan)")}
+                        onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+                      />
+                    </div>
+                  ))}
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <span style={{ color: "var(--muted)", flexShrink: 0 }}><Calendar size={16} /></span>
+                    <input
+                      type="date"
+                      value={editForm.dateEnvoi}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, dateEnvoi: e.target.value }))}
+                      style={{
+                        background: "var(--surface2)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "6px",
+                        padding: "0.4rem 0.75rem",
+                        color: "var(--text)",
+                        fontSize: "0.9rem",
+                        outline: "none",
+                        colorScheme: "dark",
+                      }}
+                      onFocus={(e) => (e.target.style.borderColor = "var(--cyan)")}
+                      onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
+                    <Building2 size={20} color="var(--cyan)" />
+                    <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: "700", color: "var(--text)" }}>
+                      {candidature.entreprise}
+                    </h1>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", color: "var(--muted)" }}>
+                    <Briefcase size={16} />
+                    <span style={{ fontSize: "1rem" }}>{candidature.poste}</span>
+                    {candidature.ville && (
+                      <>
+                        <span style={{ color: "var(--border)" }}>·</span>
+                        <MapPin size={14} />
+                        <span style={{ fontSize: "0.95rem" }}>{candidature.ville}</span>
+                      </>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", color: "var(--muted)", marginTop: "0.5rem" }}>
+                    <Calendar size={14} />
+                    <span style={{ fontSize: "0.85rem" }}>Envoyée le {date}</span>
+                  </div>
+                </>
+              )}
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.75rem" }}>
+              {editMode ? (
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button
+                    onClick={() => { setEditMode(false); setEditForm({ entreprise: candidature.entreprise, poste: candidature.poste, ville: candidature.ville || "", lienOffre: candidature.lienOffre || "", dateEnvoi: candidature.dateEnvoi.slice(0, 10) }); }}
+                    style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "8px", padding: "0.5rem 1rem", color: "var(--muted)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem" }}
+                  >
+                    <X size={14} /> Annuler
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    disabled={savingEdit}
+                    style={{ background: "var(--cyan-dim)", border: "1px solid var(--cyan)44", borderRadius: "8px", padding: "0.5rem 1rem", color: "var(--cyan)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem" }}
+                  >
+                    <Save size={14} /> {savingEdit ? "..." : "Enregistrer"}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setEditMode(true)}
+                  style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "8px", padding: "0.5rem 1rem", color: "var(--muted)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem" }}
+                >
+                  <Pencil size={14} /> Modifier
+                </button>
+              )}
               <StatusBadge statut={candidature.statut} />
 
               {/* Changement statut */}
