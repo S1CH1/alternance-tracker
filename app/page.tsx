@@ -4,10 +4,6 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Send,
-  RefreshCw,
-  Users,
-  CheckCircle,
-  Filter,
   Bell,
   AlertTriangle,
   Clock,
@@ -18,10 +14,11 @@ import {
   Square,
   CheckSquare,
   Building2,
+  Search,
+  Eye,
 } from "lucide-react";
 import Link from "next/link";
-import StatCard from "@/components/StatCard";
-import CandidatureCard from "@/components/CandidatureCard";
+import StatusBadge from "@/components/StatusBadge";
 
 interface Candidature {
   id: number;
@@ -56,8 +53,7 @@ function getRappelStatus(dateStr: string) {
 }
 
 function formatRappelDate(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
 }
 
 const STATUTS = ["Tous", "Envoyée", "Relance", "Entretien", "Acceptée", "Refusée"];
@@ -69,12 +65,12 @@ export default function Dashboard() {
   const [newTodo, setNewTodo] = useState("");
   const [loading, setLoading] = useState(true);
   const [filtre, setFiltre] = useState("Tous");
+  const [search, setSearch] = useState("");
 
   const fetchCandidatures = async () => {
     try {
       const res = await fetch("/api/candidatures");
-      const data = await res.json();
-      setCandidatures(data);
+      setCandidatures(await res.json());
     } catch (err) {
       console.error(err);
     } finally {
@@ -86,7 +82,7 @@ export default function Dashboard() {
     try {
       const res = await fetch("/api/rappels");
       const data = await res.json();
-      setRappels(data.slice(0, 3));
+      setRappels(data.slice(0, 4));
     } catch (err) {
       console.error(err);
     }
@@ -109,8 +105,7 @@ export default function Dashboard() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ texte: newTodo }),
     });
-    const todo = await res.json();
-    setTodos((prev) => [...prev, todo]);
+    setTodos((prev) => [...prev, await res.json()]);
     setNewTodo("");
   };
 
@@ -120,12 +115,18 @@ export default function Dashboard() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fait: !todo.fait }),
     });
-    setTodos((prev) => prev.map((t) => t.id === todo.id ? { ...t, fait: !t.fait } : t));
+    setTodos((prev) => prev.map((t) => (t.id === todo.id ? { ...t, fait: !t.fait } : t)));
   };
 
   const handleDeleteTodo = async (id: number) => {
     await fetch(`/api/todos/${id}`, { method: "DELETE" });
     setTodos((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Supprimer cette candidature ?")) return;
+    await fetch(`/api/candidatures/${id}`, { method: "DELETE" });
+    setCandidatures((prev) => prev.filter((c) => c.id !== id));
   };
 
   useEffect(() => {
@@ -134,449 +135,456 @@ export default function Dashboard() {
     fetchTodos();
   }, []);
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Supprimer cette candidature ?")) return;
-    await fetch(`/api/candidatures/${id}`, { method: "DELETE" });
-    setCandidatures((prev) => prev.filter((c) => c.id !== id));
-  };
-
-  const filtered =
-    filtre === "Tous"
-      ? candidatures
-      : candidatures.filter((c) => c.statut === filtre);
+  const filtered = candidatures
+    .filter((c) => filtre === "Tous" || c.statut === filtre)
+    .filter((c) => {
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return c.entreprise.toLowerCase().includes(q) || c.poste.toLowerCase().includes(q);
+    });
 
   const stats = {
     total: candidatures.length,
-    enCours: candidatures.filter((c) =>
-      ["Envoyée", "Relance"].includes(c.statut)
-    ).length,
+    enCours: candidatures.filter((c) => ["Envoyée", "Relance"].includes(c.statut)).length,
     entretiens: candidatures.filter((c) => c.statut === "Entretien").length,
     acceptees: candidatures.filter((c) => c.statut === "Acceptée").length,
   };
 
   const parEntreprise = Object.entries(
     candidatures.reduce((acc, c) => {
-      acc[c.entreprise] = acc[c.entreprise] || { total: 0, statuts: {} };
-      acc[c.entreprise].total += 1;
-      acc[c.entreprise].statuts[c.statut] = (acc[c.entreprise].statuts[c.statut] || 0) + 1;
+      acc[c.entreprise] = (acc[c.entreprise] || 0) + 1;
       return acc;
-    }, {} as Record<string, { total: number; statuts: Record<string, number> }>)
-  ).sort((a, b) => b[1].total - a[1].total);
+    }, {} as Record<string, number>)
+  ).sort((a, b) => b[1] - a[1]);
 
   return (
-    <div className="grid-bg" style={{ minHeight: "calc(100vh - 64px)", padding: "2rem" }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+    <div className="grid-bg" style={{ minHeight: "calc(100vh - 64px)", padding: "1.5rem 2rem" }}>
+      <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
+
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          style={{ marginBottom: "2rem" }}
+          transition={{ duration: 0.3 }}
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}
         >
-          <h1
-            className="gradient-text"
-            style={{ fontSize: "2rem", fontWeight: "700", margin: "0 0 0.5rem", fontFamily: "monospace" }}
-          >
-            Suivi des candidatures
-          </h1>
-          <p style={{ color: "var(--muted)", fontSize: "0.9rem", margin: 0 }}>
-            {candidatures.length} candidature{candidatures.length !== 1 ? "s" : ""} enregistrée{candidatures.length !== 1 ? "s" : ""}
-          </p>
+          <div>
+            <h1 className="gradient-text" style={{ fontSize: "1.6rem", fontWeight: "700", margin: 0, fontFamily: "monospace" }}>
+              Suivi des candidatures
+            </h1>
+            <p style={{ color: "var(--muted)", fontSize: "0.82rem", margin: "0.2rem 0 0" }}>
+              {candidatures.length} candidature{candidatures.length !== 1 ? "s" : ""} enregistrée{candidatures.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <Link href="/nouvelle" style={{ textDecoration: "none" }}>
+            <button style={{
+              background: "var(--cyan-dim)",
+              border: "1px solid var(--cyan)55",
+              borderRadius: "8px",
+              padding: "0.6rem 1.25rem",
+              color: "var(--cyan)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              fontSize: "0.875rem",
+              fontWeight: "600",
+              fontFamily: "inherit",
+              transition: "background 0.2s",
+            }}>
+              <Plus size={15} />
+              Nouvelle candidature
+            </button>
+          </Link>
         </motion.div>
 
-        {/* Stats */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "1rem",
-            marginBottom: "2rem",
-          }}
-        >
-          <StatCard label="Total" value={stats.total} icon={Send} accent="cyan" delay={0} />
-          <StatCard label="En cours" value={stats.enCours} icon={RefreshCw} accent="purple" delay={0.1} />
-          <StatCard label="Entretiens" value={stats.entretiens} icon={Users} accent="yellow" delay={0.2} />
-          <StatCard label="Acceptées" value={stats.acceptees} icon={CheckCircle} accent="green" delay={0.3} />
-        </div>
-
-        {/* Par entreprise */}
-        {parEntreprise.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.33 }}
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: "12px",
-              padding: "1.25rem 1.5rem",
-              marginBottom: "1.5rem",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-              <Building2 size={16} color="var(--cyan)" />
-              <span style={{ color: "var(--cyan)", fontWeight: "600", fontSize: "0.875rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                Par entreprise
-              </span>
-              <span style={{ color: "var(--muted)", fontSize: "0.75rem", marginLeft: "auto" }}>
-                {parEntreprise.length} entreprise{parEntreprise.length > 1 ? "s" : ""}
-              </span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-              {parEntreprise.map(([entreprise, data]) => (
-                <div
-                  key={entreprise}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.75rem",
-                    padding: "0.5rem 0.75rem",
-                    borderRadius: "8px",
-                    background: "var(--surface2)",
-                  }}
-                >
-                  <span style={{ flex: 1, fontSize: "0.875rem", color: "var(--text)", fontWeight: "500" }}>
-                    {entreprise}
-                  </span>
-                  <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                    {Object.entries(data.statuts).map(([statut, count]) => (
-                      <span
-                        key={statut}
-                        style={{
-                          fontSize: "0.7rem",
-                          padding: "0.15rem 0.5rem",
-                          borderRadius: "9999px",
-                          fontWeight: "600",
-                          background:
-                            statut === "Acceptée" ? "#22c55e22" :
-                            statut === "Refusée" ? "#ef444422" :
-                            statut === "Entretien" ? "#eab30822" :
-                            statut === "Relance" ? "#a855f722" :
-                            "var(--cyan-dim)",
-                          color:
-                            statut === "Acceptée" ? "#22c55e" :
-                            statut === "Refusée" ? "#ef4444" :
-                            statut === "Entretien" ? "#eab308" :
-                            statut === "Relance" ? "#a855f7" :
-                            "var(--cyan)",
-                        }}
-                      >
-                        {statut} ×{count}
-                      </span>
-                    ))}
-                  </div>
-                  <span style={{
-                    fontSize: "0.8rem",
-                    fontWeight: "700",
-                    color: data.total > 1 ? "var(--cyan)" : "var(--muted)",
-                    minWidth: "1.5rem",
-                    textAlign: "right",
-                  }}>
-                    {data.total}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Widget Rappels à venir */}
-        {rappels.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.35 }}
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: "12px",
-              padding: "1.25rem 1.5rem",
-              marginBottom: "1.5rem",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: "1rem",
-              }}
-            >
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-              >
-                <Bell size={16} color="var(--cyan)" />
-                <span
-                  style={{
-                    color: "var(--cyan)",
-                    fontWeight: "600",
-                    fontSize: "0.875rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                  }}
-                >
-                  Rappels à venir
-                </span>
-              </div>
-              <Link
-                href="/rappels"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.25rem",
-                  color: "var(--muted)",
-                  fontSize: "0.8rem",
-                  textDecoration: "none",
-                  transition: "color 0.2s",
-                }}
-              >
-                Voir tous <ArrowRight size={14} />
-              </Link>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {rappels.map((rappel) => {
-                const status = getRappelStatus(rappel.date);
-                const isRetard = status === "retard";
-                const isAujourdHui = status === "aujourd_hui";
-                return (
-                  <div
-                    key={rappel.id}
-                    className={isAujourdHui ? "pulse-glow" : ""}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.75rem",
-                      padding: "0.65rem 1rem",
-                      borderRadius: "8px",
-                      background: isRetard
-                        ? "#ff000010"
-                        : isAujourdHui
-                        ? "var(--cyan-dim)"
-                        : "var(--surface2)",
-                      border: isRetard
-                        ? "1px solid #ff000033"
-                        : isAujourdHui
-                        ? "1px solid var(--cyan)"
-                        : "1px solid var(--border)",
-                    }}
-                  >
-                    {isRetard ? (
-                      <AlertTriangle size={15} color="#ff6b6b" />
-                    ) : isAujourdHui ? (
-                      <Bell size={15} color="var(--cyan)" />
-                    ) : (
-                      <Clock size={15} color="var(--muted)" />
-                    )}
-                    <span
-                      style={{
-                        flex: 1,
-                        fontSize: "0.875rem",
-                        color: isRetard
-                          ? "#ff6b6b"
-                          : isAujourdHui
-                          ? "var(--cyan)"
-                          : "var(--text)",
-                      }}
-                    >
-                      {rappel.message}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: "0.75rem",
-                        color: isRetard
-                          ? "#ff6b6b"
-                          : isAujourdHui
-                          ? "var(--cyan)"
-                          : "var(--muted)",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {formatRappelDate(rappel.date)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-
-        {/* À faire */}
+        {/* Stats compactes */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.38 }}
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--border)",
-            borderRadius: "12px",
-            padding: "1.25rem 1.5rem",
-            marginBottom: "1.5rem",
-          }}
+          transition={{ duration: 0.3, delay: 0.05 }}
+          style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem", marginBottom: "1.5rem" }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-            <ListTodo size={16} color="var(--cyan)" />
-            <span style={{ color: "var(--cyan)", fontWeight: "600", fontSize: "0.875rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              À faire
-            </span>
-            {todos.filter((t) => !t.fait).length > 0 && (
-              <span style={{
-                background: "var(--cyan-dim)",
-                color: "var(--cyan)",
-                borderRadius: "9999px",
-                fontSize: "0.7rem",
-                fontWeight: "700",
-                padding: "0.1rem 0.5rem",
-              }}>
-                {todos.filter((t) => !t.fait).length}
+          {[
+            { label: "Total", value: stats.total, color: "var(--cyan)" },
+            { label: "En cours", value: stats.enCours, color: "var(--purple)" },
+            { label: "Entretiens", value: stats.entretiens, color: "#eab308" },
+            { label: "Acceptées", value: stats.acceptees, color: "#22c55e" },
+          ].map((s) => (
+            <div key={s.label} style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: "10px",
+              padding: "0.875rem 1.25rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+            }}>
+              <span style={{ fontSize: "1.75rem", fontWeight: "700", color: s.color, fontFamily: "monospace", lineHeight: 1 }}>
+                {s.value}
               </span>
-            )}
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", marginBottom: todos.length > 0 ? "0.75rem" : "0" }}>
-            {todos.map((todo) => (
-              <div
-                key={todo.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.75rem",
-                  padding: "0.5rem 0.75rem",
-                  borderRadius: "8px",
-                  background: todo.fait ? "var(--surface2)" : "none",
-                  transition: "background 0.2s",
-                }}
-              >
-                <button
-                  onClick={() => handleToggleTodo(todo)}
-                  style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", color: todo.fait ? "var(--cyan)" : "var(--muted)", flexShrink: 0 }}
-                >
-                  {todo.fait ? <CheckSquare size={16} /> : <Square size={16} />}
-                </button>
-                <span style={{
-                  flex: 1,
-                  fontSize: "0.875rem",
-                  color: todo.fait ? "var(--muted)" : "var(--text)",
-                  textDecoration: todo.fait ? "line-through" : "none",
-                  transition: "all 0.2s",
-                }}>
-                  {todo.texte}
-                </span>
-                <button
-                  onClick={() => handleDeleteTodo(todo.id)}
-                  style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--border)", display: "flex" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--border)")}
-                >
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <form onSubmit={handleAddTodo} style={{ display: "flex", gap: "0.5rem" }}>
-            <input
-              type="text"
-              value={newTodo}
-              onChange={(e) => setNewTodo(e.target.value)}
-              placeholder="Ajouter une tâche..."
-              style={{
-                flex: 1,
-                background: "var(--surface2)",
-                border: "1px solid var(--border)",
-                borderRadius: "8px",
-                padding: "0.5rem 0.75rem",
-                color: "var(--text)",
-                fontSize: "0.875rem",
-                outline: "none",
-                fontFamily: "inherit",
-              }}
-              onFocus={(e) => (e.target.style.borderColor = "var(--cyan)")}
-              onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
-            />
-            <button
-              type="submit"
-              style={{
-                background: "var(--cyan-dim)",
-                border: "1px solid var(--cyan)44",
-                borderRadius: "8px",
-                padding: "0.5rem 0.75rem",
-                color: "var(--cyan)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <Plus size={16} />
-            </button>
-          </form>
-        </motion.div>
-
-        {/* Filtres */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.4 }}
-          style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1.5rem", alignItems: "center" }}
-        >
-          <Filter size={16} color="var(--muted)" />
-          {STATUTS.map((s) => (
-            <button
-              key={s}
-              onClick={() => setFiltre(s)}
-              style={{
-                background: filtre === s ? "var(--cyan-dim)" : "var(--surface)",
-                border: `1px solid ${filtre === s ? "var(--cyan)" : "var(--border)"}`,
-                borderRadius: "9999px",
-                padding: "0.35rem 1rem",
-                color: filtre === s ? "var(--cyan)" : "var(--muted)",
-                cursor: "pointer",
-                fontSize: "0.8rem",
-                fontWeight: "500",
-                transition: "all 0.2s",
-              }}
-            >
-              {s}
-            </button>
+              <span style={{ fontSize: "0.75rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: 1.3 }}>
+                {s.label}
+              </span>
+            </div>
           ))}
         </motion.div>
 
-        {/* Liste */}
-        {loading ? (
-          <div style={{ textAlign: "center", padding: "4rem", color: "var(--muted)" }}>
-            Chargement...
-          </div>
-        ) : filtered.length === 0 ? (
+        {/* Contenu principal 2 colonnes */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "1.25rem", alignItems: "start" }}>
+
+          {/* Colonne principale : liste */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            style={{
-              textAlign: "center",
-              padding: "4rem 2rem",
-              background: "var(--surface)",
-              border: "1px dashed var(--border)",
-              borderRadius: "12px",
-              color: "var(--muted)",
-            }}
+            transition={{ duration: 0.3, delay: 0.1 }}
           >
-            <Send size={40} style={{ margin: "0 auto 1rem", display: "block", opacity: 0.3 }} />
-            <p style={{ margin: 0 }}>
-              {filtre === "Tous"
-                ? "Aucune candidature. Commencez par en ajouter une !"
-                : `Aucune candidature avec le statut "${filtre}"`}
-            </p>
+            {/* Recherche + filtres */}
+            <div style={{ marginBottom: "0.875rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+              <div style={{ position: "relative" }}>
+                <Search size={14} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--muted)", pointerEvents: "none" }} />
+                <input
+                  type="text"
+                  placeholder="Rechercher une entreprise, un poste..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  style={{
+                    width: "100%",
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "8px",
+                    padding: "0.6rem 0.75rem 0.6rem 2.25rem",
+                    color: "var(--text)",
+                    fontSize: "0.875rem",
+                    outline: "none",
+                    fontFamily: "inherit",
+                    boxSizing: "border-box",
+                    transition: "border-color 0.2s",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "var(--cyan)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+                />
+              </div>
+              <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+                {STATUTS.map((s) => {
+                  const count = s === "Tous" ? candidatures.length : candidatures.filter((c) => c.statut === s).length;
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => setFiltre(s)}
+                      style={{
+                        background: filtre === s ? "var(--cyan-dim)" : "var(--surface)",
+                        border: `1px solid ${filtre === s ? "var(--cyan)" : "var(--border)"}`,
+                        borderRadius: "9999px",
+                        padding: "0.3rem 0.875rem",
+                        color: filtre === s ? "var(--cyan)" : "var(--muted)",
+                        cursor: "pointer",
+                        fontSize: "0.78rem",
+                        fontWeight: "500",
+                        transition: "all 0.2s",
+                        fontFamily: "inherit",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.3rem",
+                      }}
+                    >
+                      {s}
+                      <span style={{ opacity: 0.6, fontSize: "0.72rem" }}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Liste des candidatures */}
+            {loading ? (
+              <div style={{ textAlign: "center", padding: "3rem", color: "var(--muted)", fontSize: "0.9rem" }}>
+                Chargement...
+              </div>
+            ) : filtered.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "3rem 2rem", background: "var(--surface)", border: "1px dashed var(--border)", borderRadius: "12px", color: "var(--muted)" }}>
+                <Send size={32} style={{ margin: "0 auto 0.75rem", display: "block", opacity: 0.3 }} />
+                <p style={{ margin: 0, fontSize: "0.875rem" }}>
+                  {filtre === "Tous" && !search ? "Aucune candidature. Commencez par en ajouter une !" : "Aucun résultat pour cette recherche."}
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                {filtered.map((c, i) => (
+                  <motion.div
+                    key={c.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2, delay: i * 0.025 }}
+                    style={{
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "8px",
+                      padding: "0.6rem 0.875rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.75rem",
+                      transition: "border-color 0.15s",
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--cyan)44"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)"; }}
+                  >
+                    {/* Entreprise */}
+                    <span style={{
+                      fontWeight: "600",
+                      color: "var(--text)",
+                      fontSize: "0.875rem",
+                      minWidth: "130px",
+                      maxWidth: "160px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
+                    }}>
+                      {c.entreprise}
+                    </span>
+
+                    {/* Poste + ville */}
+                    <span style={{
+                      color: "var(--muted)",
+                      fontSize: "0.82rem",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      flex: 1,
+                    }}>
+                      {c.poste}{c.ville ? ` · ${c.ville}` : ""}
+                    </span>
+
+                    {/* Date */}
+                    <span style={{ color: "var(--muted)", fontSize: "0.75rem", whiteSpace: "nowrap", flexShrink: 0 }}>
+                      {new Date(c.dateEnvoi).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                    </span>
+
+                    {/* Statut */}
+                    <StatusBadge statut={c.statut} />
+
+                    {/* Actions */}
+                    <div style={{ display: "flex", gap: "0.35rem", flexShrink: 0 }}>
+                      <Link href={`/candidature/${c.id}`} style={{ textDecoration: "none" }}>
+                        <button style={{
+                          background: "var(--cyan-dim)",
+                          border: "1px solid var(--cyan)44",
+                          borderRadius: "6px",
+                          padding: "0.3rem 0.55rem",
+                          color: "var(--cyan)",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          fontFamily: "inherit",
+                        }}>
+                          <Eye size={13} />
+                        </button>
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(c.id)}
+                        style={{
+                          background: "#ef444411",
+                          border: "1px solid #ef444433",
+                          borderRadius: "6px",
+                          padding: "0.3rem 0.55rem",
+                          color: "#ef4444",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </motion.div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {filtered.map((c, i) => (
-              <CandidatureCard
-                key={c.id}
-                candidature={c}
-                index={i}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
-        )}
+
+          {/* Sidebar */}
+          <motion.div
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: 0.15 }}
+            style={{ display: "flex", flexDirection: "column", gap: "1rem", position: "sticky", top: "1.5rem" }}
+          >
+
+            {/* Par entreprise */}
+            {parEntreprise.length > 0 && (
+              <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "12px", padding: "1rem 1.125rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                  <Building2 size={14} color="var(--cyan)" />
+                  <span style={{ color: "var(--cyan)", fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    Par entreprise
+                  </span>
+                  <span style={{ color: "var(--muted)", fontSize: "0.72rem", marginLeft: "auto" }}>
+                    {parEntreprise.length} entreprise{parEntreprise.length > 1 ? "s" : ""}
+                  </span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem", maxHeight: "220px", overflowY: "auto" }}>
+                  {parEntreprise.map(([entreprise, count]) => (
+                    <div
+                      key={entreprise}
+                      style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.35rem 0.5rem", borderRadius: "6px", cursor: "pointer", transition: "background 0.15s" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface2)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                      onClick={() => { setSearch(entreprise); setFiltre("Tous"); }}
+                      title="Filtrer par cette entreprise"
+                    >
+                      <span style={{ flex: 1, fontSize: "0.82rem", color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {entreprise}
+                      </span>
+                      <span style={{
+                        fontSize: "0.75rem",
+                        fontWeight: "700",
+                        color: count > 1 ? "var(--cyan)" : "var(--muted)",
+                        fontFamily: "monospace",
+                        background: count > 1 ? "var(--cyan-dim)" : "transparent",
+                        borderRadius: "9999px",
+                        padding: count > 1 ? "0.1rem 0.4rem" : "0",
+                        minWidth: "1.2rem",
+                        textAlign: "center",
+                      }}>
+                        {count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Rappels */}
+            {rappels.length > 0 && (
+              <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "12px", padding: "1rem 1.125rem" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <Bell size={14} color="var(--cyan)" />
+                    <span style={{ color: "var(--cyan)", fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                      Rappels
+                    </span>
+                  </div>
+                  <Link href="/rappels" style={{ display: "flex", alignItems: "center", gap: "0.2rem", color: "var(--muted)", fontSize: "0.75rem", textDecoration: "none" }}>
+                    Tous <ArrowRight size={12} />
+                  </Link>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                  {rappels.map((rappel) => {
+                    const status = getRappelStatus(rappel.date);
+                    const isRetard = status === "retard";
+                    const isAujourdHui = status === "aujourd_hui";
+                    return (
+                      <div
+                        key={rappel.id}
+                        className={isAujourdHui ? "pulse-glow" : ""}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                          padding: "0.45rem 0.6rem",
+                          borderRadius: "6px",
+                          background: isRetard ? "#ff000010" : isAujourdHui ? "var(--cyan-dim)" : "var(--surface2)",
+                          border: isRetard ? "1px solid #ff000033" : isAujourdHui ? "1px solid var(--cyan)" : "1px solid transparent",
+                        }}
+                      >
+                        {isRetard ? <AlertTriangle size={13} color="#ff6b6b" /> : isAujourdHui ? <Bell size={13} color="var(--cyan)" /> : <Clock size={13} color="var(--muted)" />}
+                        <span style={{
+                          flex: 1, fontSize: "0.8rem",
+                          color: isRetard ? "#ff6b6b" : isAujourdHui ? "var(--cyan)" : "var(--text)",
+                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        }}>
+                          {rappel.message}
+                        </span>
+                        <span style={{ fontSize: "0.7rem", color: "var(--muted)", whiteSpace: "nowrap" }}>
+                          {formatRappelDate(rappel.date)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Todos */}
+            <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "12px", padding: "1rem 1.125rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                <ListTodo size={14} color="var(--cyan)" />
+                <span style={{ color: "var(--cyan)", fontWeight: "600", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  À faire
+                </span>
+                {todos.filter((t) => !t.fait).length > 0 && (
+                  <span style={{ background: "var(--cyan-dim)", color: "var(--cyan)", borderRadius: "9999px", fontSize: "0.65rem", fontWeight: "700", padding: "0.1rem 0.45rem" }}>
+                    {todos.filter((t) => !t.fait).length}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", marginBottom: todos.length > 0 ? "0.6rem" : "0" }}>
+                {todos.map((todo) => (
+                  <div key={todo.id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.3rem 0.25rem" }}>
+                    <button
+                      onClick={() => handleToggleTodo(todo)}
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", color: todo.fait ? "var(--cyan)" : "var(--muted)", flexShrink: 0 }}
+                    >
+                      {todo.fait ? <CheckSquare size={14} /> : <Square size={14} />}
+                    </button>
+                    <span style={{ flex: 1, fontSize: "0.82rem", color: todo.fait ? "var(--muted)" : "var(--text)", textDecoration: todo.fait ? "line-through" : "none", transition: "all 0.2s" }}>
+                      {todo.texte}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteTodo(todo.id)}
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--border)", display: "flex" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--border)")}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <form onSubmit={handleAddTodo} style={{ display: "flex", gap: "0.4rem" }}>
+                <input
+                  type="text"
+                  value={newTodo}
+                  onChange={(e) => setNewTodo(e.target.value)}
+                  placeholder="Ajouter une tâche..."
+                  style={{
+                    flex: 1,
+                    background: "var(--surface2)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "6px",
+                    padding: "0.45rem 0.65rem",
+                    color: "var(--text)",
+                    fontSize: "0.82rem",
+                    outline: "none",
+                    fontFamily: "inherit",
+                    transition: "border-color 0.2s",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "var(--cyan)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    background: "var(--cyan-dim)",
+                    border: "1px solid var(--cyan)44",
+                    borderRadius: "6px",
+                    padding: "0.45rem 0.65rem",
+                    color: "var(--cyan)",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  <Plus size={14} />
+                </button>
+              </form>
+            </div>
+
+          </motion.div>
+        </div>
       </div>
     </div>
   );
