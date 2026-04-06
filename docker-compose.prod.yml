@@ -1,0 +1,15 @@
+services:
+  alternance-tracker:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: alternance-tracker
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/data/prod.db
+    restart: unless-stopped

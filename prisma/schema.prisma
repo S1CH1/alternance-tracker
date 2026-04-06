@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Candidature {
+  id           Int      @id @default(autoincrement())
+  entreprise   String
+  poste        String
+  dateEnvoi    DateTime @default(now())
+  statut       String   @default("Envoyée")
+  ville        String?
+  lienOffre    String?
+  notes        String?
+  cvPath       String?
+  lmPath       String?
+  offrePdfPath String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Todo {
+  id        Int      @id @default(autoincrement())
+  texte     String
+  fait      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Note {
+  id        Int      @id @default(autoincrement())
+  titre     String?
+  contenu   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Rappel {
+  id        Int      @id @default(autoincrement())
+  message   String
+  date      DateTime
+  fait      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
