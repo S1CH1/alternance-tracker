@@ -116,11 +116,11 @@ export default function NouvelleCandidature() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
           onSubmit={handleSubmit}
+          className="form-card"
           style={{
             background: "var(--surface)",
             border: "1px solid var(--border)",
             borderRadius: "16px",
-            padding: "2rem",
             display: "flex",
             flexDirection: "column",
             gap: "1.5rem",
@@ -175,7 +175,7 @@ export default function NouvelleCandidature() {
             </div>
           </div>
 
-          <div style={{ maxWidth: "250px" }}>
+          <div style={{ maxWidth: "100%" }}>
             <label style={labelStyle}>
               <Calendar size={12} style={{ display: "inline", marginRight: "0.35rem" }} />
               Date d&apos;envoi
@@ -184,7 +184,7 @@ export default function NouvelleCandidature() {
               type="date"
               value={form.dateEnvoi}
               onChange={(e) => setForm({ ...form, dateEnvoi: e.target.value })}
-              style={{ ...inputStyle, colorScheme: "dark" }}
+              style={{ ...inputStyle, colorScheme: "dark", width: "100%" }}
               onFocus={(e) => (e.target.style.borderColor = "var(--cyan)")}
               onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
             />

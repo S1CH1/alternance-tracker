@@ -319,65 +319,27 @@ export default function Dashboard() {
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.2, delay: i * 0.025 }}
-                    style={{
-                      background: "var(--surface)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "8px",
-                      padding: "0.6rem 0.875rem",
-                      transition: "border-color 0.15s",
-                    }}
-                    className="cand-row-inner"
+                    className="cand-card"
                     onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--cyan)44"; }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)"; }}
                   >
-                    {/* Entreprise */}
                     <span className="cand-entreprise">{c.entreprise}</span>
-
-                    {/* Poste + ville */}
-                    <span className="cand-poste">
-                      {c.poste}{c.ville ? ` · ${c.ville}` : ""}
-                    </span>
-
-                    {/* Date */}
+                    <span className="cand-poste">{c.poste}{c.ville ? ` · ${c.ville}` : ""}</span>
                     <span className="cand-date">
                       {new Date(c.dateEnvoi).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
                     </span>
-
-                    {/* Statut */}
-                    <StatusBadge statut={c.statut} />
-
-                    {/* Actions */}
+                    <span className="cand-statut"><StatusBadge statut={c.statut} /></span>
                     <div className="cand-actions">
                       <Link href={`/candidature/${c.id}`} style={{ textDecoration: "none" }}>
-                        <button style={{
-                          background: "var(--cyan-dim)",
-                          border: "1px solid var(--cyan)44",
-                          borderRadius: "6px",
-                          padding: "0.3rem 0.55rem",
-                          color: "var(--cyan)",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          fontFamily: "inherit",
-                        }}>
-                          <Eye size={13} />
+                        <button style={{ background: "var(--cyan-dim)", border: "1px solid var(--cyan)44", borderRadius: "6px", padding: "0.4rem 0.6rem", color: "var(--cyan)", cursor: "pointer", display: "flex", alignItems: "center", fontFamily: "inherit" }}>
+                          <Eye size={14} />
                         </button>
                       </Link>
                       <button
                         onClick={() => handleDelete(c.id)}
-                        style={{
-                          background: "#ef444411",
-                          border: "1px solid #ef444433",
-                          borderRadius: "6px",
-                          padding: "0.3rem 0.55rem",
-                          color: "#ef4444",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          fontFamily: "inherit",
-                        }}
+                        style={{ background: "#ef444411", border: "1px solid #ef444433", borderRadius: "6px", padding: "0.4rem 0.6rem", color: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center", fontFamily: "inherit" }}
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </motion.div>
@@ -391,7 +353,7 @@ export default function Dashboard() {
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: 0.15 }}
-            style={{ display: "flex", flexDirection: "column", gap: "1rem", position: "sticky", top: "1.5rem" }}
+            className="dashboard-sidebar"
           >
 
             {/* Par entreprise */}

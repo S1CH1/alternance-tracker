@@ -131,12 +131,7 @@ export default function NotesPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "2rem",
-          }}
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem", flexWrap: "wrap", gap: "0.75rem" }}
         >
           <div>
             <div
@@ -187,20 +182,14 @@ export default function NotesPage() {
         </motion.div>
 
         {/* Contenu principal */}
-        <div className="notes-layout">
+        <div className={`notes-layout ${selectedId ? "notes-note-open" : ""}`}>
           {/* Liste des notes */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: "12px",
-              overflow: "hidden",
-              display: "flex",
-              flexDirection: "column",
-            }}
+            className="notes-sidebar-panel"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden", display: "flex", flexDirection: "column" }}
           >
             <div
               style={{
@@ -308,14 +297,8 @@ export default function NotesPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.2 }}
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: "12px",
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-            }}
+            className="notes-editor-panel"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "12px", display: "flex", flexDirection: "column", overflow: "hidden" }}
           >
             {selectedNote || selectedId ? (
               <>
@@ -327,8 +310,18 @@ export default function NotesPage() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
+                    gap: "0.5rem",
+                    flexWrap: "wrap",
                   }}
                 >
+                  {/* Bouton retour mobile */}
+                  <button
+                    className="notes-back-btn"
+                    onClick={() => { setSelectedId(null); setEditTitre(""); setEditContenu(""); }}
+                    style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", display: "none", alignItems: "center", gap: "0.35rem", fontSize: "0.82rem", padding: 0 }}
+                  >
+                    ← Retour
+                  </button>
                   <div
                     style={{
                       display: "flex",
