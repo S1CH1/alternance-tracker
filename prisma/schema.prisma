@@ -8,19 +8,31 @@ datasource db {
 }
 
 model Candidature {
-  id           Int      @id @default(autoincrement())
+  id           Int         @id @default(autoincrement())
   entreprise   String
   poste        String
-  dateEnvoi    DateTime @default(now())
-  statut       String   @default("Envoyée")
+  dateEnvoi    DateTime    @default(now())
+  statut       String      @default("Envoyée")
   ville        String?
   lienOffre    String?
   notes        String?
   cvPath       String?
   lmPath       String?
   offrePdfPath String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  entretiens   Entretien[]
+}
+
+model Entretien {
+  id            Int         @id @default(autoincrement())
+  candidatureId Int
+  candidature   Candidature @relation(fields: [candidatureId], references: [id], onDelete: Cascade)
+  date          DateTime
+  type          String      // "Téléphone", "Visio", "Présentiel"
+  notes         String?
+  resultat      String      @default("En attente")
+  createdAt     DateTime    @default(now())
 }
 
 model Todo {

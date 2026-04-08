@@ -149,6 +149,7 @@ export default function Dashboard() {
     enCours: candidatures.filter((c) => ["Envoyée", "Relance"].includes(c.statut)).length,
     entretiens: candidatures.filter((c) => c.statut === "Entretien").length,
     acceptees: candidatures.filter((c) => c.statut === "Acceptée").length,
+    refusees: candidatures.filter((c) => c.statut === "Refusée").length,
   };
 
   const parEntreprise = Object.entries(
@@ -159,7 +160,7 @@ export default function Dashboard() {
   ).sort((a, b) => b[1] - a[1]);
 
   return (
-    <div className="grid-bg" style={{ minHeight: "calc(100vh - 64px)", padding: "1.5rem 2rem" }}>
+    <div className="grid-bg dashboard-pad">
       <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
 
         {/* Header */}
@@ -167,7 +168,7 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.75rem" }}
         >
           <div>
             <h1 className="gradient-text" style={{ fontSize: "1.6rem", fontWeight: "700", margin: 0, fontFamily: "monospace" }}>
@@ -204,13 +205,14 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.05 }}
-          style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem", marginBottom: "1.5rem" }}
+          className="stats-row"
         >
           {[
             { label: "Total", value: stats.total, color: "var(--cyan)" },
             { label: "En cours", value: stats.enCours, color: "var(--purple)" },
             { label: "Entretiens", value: stats.entretiens, color: "#eab308" },
             { label: "Acceptées", value: stats.acceptees, color: "#22c55e" },
+            { label: "Refusées", value: stats.refusees, color: "#ef4444" },
           ].map((s) => (
             <div key={s.label} style={{
               background: "var(--surface)",
@@ -232,7 +234,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Contenu principal 2 colonnes */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "1.25rem", alignItems: "start" }}>
+        <div className="content-cols">
 
           {/* Colonne principale : liste */}
           <motion.div
@@ -322,11 +324,9 @@ export default function Dashboard() {
                       border: "1px solid var(--border)",
                       borderRadius: "8px",
                       padding: "0.6rem 0.875rem",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.75rem",
                       transition: "border-color 0.15s",
                     }}
+                    className="cand-row-inner"
                     onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--cyan)44"; }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)"; }}
                   >
