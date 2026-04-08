@@ -176,6 +176,9 @@
   .notes-back-btn { display: flex !important; }
   /* Quand pas de note ouverte : cacher l'éditeur vide */
   .notes-layout:not(.notes-note-open) .notes-editor-panel { display: none; }
+  /* Listes candidatures : mobile uniquement */
+  .cand-list-desktop { display: none; }
+  .cand-list-mobile  { display: block; }
 }
 
 @media (max-width: 640px) {
@@ -209,6 +212,87 @@
   .cand-poste    { grid-area: unset; flex: 1; min-width: 0; }
   .cand-date     { grid-area: unset; white-space: nowrap; flex-shrink: 0; }
   .cand-actions  { grid-area: unset; justify-self: auto; flex-shrink: 0; }
+}
+
+/* --- Mobile bottom nav --- */
+.mobile-bottom-nav {
+  display: none;
+}
+.mobile-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.5rem 0.25rem;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+.mobile-tab-active {
+  color: var(--cyan);
+}
+.mobile-tab-new {
+  color: var(--purple);
+}
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  /* Espace sous le contenu pour ne pas être caché par la nav */
+  main { padding-bottom: 60px; }
+}
+
+/* --- Listes candidatures desktop/mobile --- */
+.cand-list-desktop { display: block; }
+.cand-list-mobile  { display: none; }
+
+/* --- Dashboard : onglets ouvertes/fermées (mobile) --- */
+.dash-tabs {
+  display: none;
+}
+@media (max-width: 768px) {
+  .dash-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  .dash-tab {
+    flex: 1;
+    padding: 0.6rem 0.5rem;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .dash-tab-active {
+    background: var(--cyan-dim);
+    color: var(--cyan);
+  }
+  /* Cacher les filtres pills classiques sur mobile */
+  .filters-desktop { display: none; }
+}
+@media (min-width: 769px) {
+  .filters-desktop { display: flex; }
 }
 
 /* ===================== Variables & Base ===================== */

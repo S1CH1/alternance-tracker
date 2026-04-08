@@ -57,6 +57,8 @@ function formatRappelDate(iso: string) {
 }
 
 const STATUTS = ["Tous", "Envoyée", "Relance", "Entretien", "Acceptée", "Refusée"];
+const STATUTS_OUVERTES = ["Envoyée", "Relance", "Entretien"];
+const STATUTS_FERMEES = ["Acceptée", "Refusée"];
 
 export default function Dashboard() {
   const [candidatures, setCandidatures] = useState<Candidature[]>([]);
@@ -66,6 +68,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [filtre, setFiltre] = useState("Tous");
   const [search, setSearch] = useState("");
+  const [mobileTab, setMobileTab] = useState<"ouvertes" | "fermees">("ouvertes");
 
   const fetchCandidatures = async () => {
     try {
@@ -136,8 +139,18 @@ export default function Dashboard() {
     fetchTodos();
   }, []);
 
-  const filtered = candidatures
+  const filteredDesktop = candidatures
     .filter((c) => filtre === "Tous" || c.statut === filtre)
+    .filter((c) => {
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return c.entreprise.toLowerCase().includes(q) || c.poste.toLowerCase().includes(q);
+    });
+
+  const filteredMobile = candidatures
+    .filter((c) => mobileTab === "ouvertes"
+      ? STATUTS_OUVERTES.includes(c.statut)
+      : STATUTS_FERMEES.includes(c.statut))
     .filter((c) => {
       if (!search.trim()) return true;
       const q = search.toLowerCase();
@@ -242,6 +255,25 @@ export default function Dashboard() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.1 }}
           >
+            {/* Onglets mobile : Ouvertes / Fermées */}
+            <div className="dash-tabs">
+              {(["ouvertes", "fermees"] as const).map((tab) => {
+                const label = tab === "ouvertes" ? "Ouvertes" : "Fermées";
+                const count = tab === "ouvertes"
+                  ? candidatures.filter((c) => STATUTS_OUVERTES.includes(c.statut)).length
+                  : candidatures.filter((c) => STATUTS_FERMEES.includes(c.statut)).length;
+                return (
+                  <button
+                    key={tab}
+                    className={`dash-tab ${mobileTab === tab ? "dash-tab-active" : ""}`}
+                    onClick={() => setMobileTab(tab)}
+                  >
+                    {label} <span style={{ opacity: 0.6, fontSize: "0.72rem" }}>({count})</span>
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Recherche + filtres */}
             <div style={{ marginBottom: "0.875rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
               <div style={{ position: "relative" }}>
@@ -268,7 +300,7 @@ export default function Dashboard() {
                   onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
                 />
               </div>
-              <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+              <div className="filters-desktop" style={{ gap: "0.4rem", flexWrap: "wrap" }}>
                 {STATUTS.map((s) => {
                   const count = s === "Tous" ? candidatures.length : candidatures.filter((c) => c.statut === s).length;
                   return (
@@ -304,16 +336,20 @@ export default function Dashboard() {
               <div style={{ textAlign: "center", padding: "3rem", color: "var(--muted)", fontSize: "0.9rem" }}>
                 Chargement...
               </div>
-            ) : filtered.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "3rem 2rem", background: "var(--surface)", border: "1px dashed var(--border)", borderRadius: "12px", color: "var(--muted)" }}>
-                <Send size={32} style={{ margin: "0 auto 0.75rem", display: "block", opacity: 0.3 }} />
-                <p style={{ margin: 0, fontSize: "0.875rem" }}>
-                  {filtre === "Tous" && !search ? "Aucune candidature. Commencez par en ajouter une !" : "Aucun résultat pour cette recherche."}
-                </p>
-              </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-                {filtered.map((c, i) => (
+              <>
+                {/* Version desktop (filtres classiques) */}
+                <div className="cand-list-desktop">
+                  {filteredDesktop.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "3rem 2rem", background: "var(--surface)", border: "1px dashed var(--border)", borderRadius: "12px", color: "var(--muted)" }}>
+                      <Send size={32} style={{ margin: "0 auto 0.75rem", display: "block", opacity: 0.3 }} />
+                      <p style={{ margin: 0, fontSize: "0.875rem" }}>
+                        {filtre === "Tous" && !search ? "Aucune candidature. Commencez par en ajouter une !" : "Aucun résultat."}
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                      {filteredDesktop.map((c, i) => (
                   <motion.div
                     key={c.id}
                     initial={{ opacity: 0, x: -8 }}
@@ -344,7 +380,56 @@ export default function Dashboard() {
                     </div>
                   </motion.div>
                 ))}
-              </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Version mobile (onglets ouvertes/fermées) */}
+                <div className="cand-list-mobile">
+                  {filteredMobile.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "2rem 1rem", background: "var(--surface)", border: "1px dashed var(--border)", borderRadius: "12px", color: "var(--muted)" }}>
+                      <Send size={28} style={{ margin: "0 auto 0.75rem", display: "block", opacity: 0.3 }} />
+                      <p style={{ margin: 0, fontSize: "0.875rem" }}>
+                        {mobileTab === "ouvertes" ? "Aucune candidature ouverte." : "Aucune candidature fermée."}
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                      {filteredMobile.map((c, i) => (
+                        <motion.div
+                          key={c.id}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.2, delay: i * 0.025 }}
+                          className="cand-card"
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--cyan)44"; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)"; }}
+                        >
+                          <span className="cand-entreprise">{c.entreprise}</span>
+                          <span className="cand-poste">{c.poste}{c.ville ? ` · ${c.ville}` : ""}</span>
+                          <span className="cand-date">
+                            {new Date(c.dateEnvoi).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                          </span>
+                          <span className="cand-statut"><StatusBadge statut={c.statut} /></span>
+                          <div className="cand-actions">
+                            <Link href={`/candidature/${c.id}`} style={{ textDecoration: "none" }}>
+                              <button style={{ background: "var(--cyan-dim)", border: "1px solid var(--cyan)44", borderRadius: "6px", padding: "0.4rem 0.6rem", color: "var(--cyan)", cursor: "pointer", display: "flex", alignItems: "center", fontFamily: "inherit" }}>
+                                <Eye size={14} />
+                              </button>
+                            </Link>
+                            <button
+                              onClick={() => handleDelete(c.id)}
+                              style={{ background: "#ef444411", border: "1px solid #ef444433", borderRadius: "6px", padding: "0.4rem 0.6rem", color: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center", fontFamily: "inherit" }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </motion.div>
 
