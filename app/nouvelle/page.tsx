@@ -72,7 +72,7 @@ export default function NouvelleCandidature() {
   };
 
   return (
-    <div className="grid-bg" style={{ minHeight: "calc(100vh - 64px)", padding: "2rem" }}>
+    <div className="grid-bg page-pad">
       <div style={{ maxWidth: "800px", margin: "0 auto" }}>
         {/* Header */}
         <motion.div
@@ -127,7 +127,7 @@ export default function NouvelleCandidature() {
           }}
         >
           {/* Infos principales */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
+          <div className="form-grid-3">
             <div>
               <label style={labelStyle}>
                 <Building2 size={12} style={{ display: "inline", marginRight: "0.35rem" }} />

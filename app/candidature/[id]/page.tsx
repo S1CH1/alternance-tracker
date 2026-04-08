@@ -505,7 +505,7 @@ export default function CandidatureDetail() {
           {/* Formulaire ajout */}
           {showAddEntretien && (
             <form onSubmit={handleAddEntretien} style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "10px", padding: "1rem", marginBottom: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+              <div className="entretien-form-grid">
                 <div>
                   <label style={{ fontSize: "0.75rem", color: "var(--muted)", display: "block", marginBottom: "0.3rem" }}>Date *</label>
                   <input

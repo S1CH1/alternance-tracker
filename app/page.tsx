@@ -331,34 +331,15 @@ export default function Dashboard() {
                     onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)"; }}
                   >
                     {/* Entreprise */}
-                    <span style={{
-                      fontWeight: "600",
-                      color: "var(--text)",
-                      fontSize: "0.875rem",
-                      minWidth: "130px",
-                      maxWidth: "160px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      flexShrink: 0,
-                    }}>
-                      {c.entreprise}
-                    </span>
+                    <span className="cand-entreprise">{c.entreprise}</span>
 
                     {/* Poste + ville */}
-                    <span style={{
-                      color: "var(--muted)",
-                      fontSize: "0.82rem",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      flex: 1,
-                    }}>
+                    <span className="cand-poste">
                       {c.poste}{c.ville ? ` · ${c.ville}` : ""}
                     </span>
 
                     {/* Date */}
-                    <span style={{ color: "var(--muted)", fontSize: "0.75rem", whiteSpace: "nowrap", flexShrink: 0 }}>
+                    <span className="cand-date">
                       {new Date(c.dateEnvoi).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
                     </span>
 
@@ -366,7 +347,7 @@ export default function Dashboard() {
                     <StatusBadge statut={c.statut} />
 
                     {/* Actions */}
-                    <div style={{ display: "flex", gap: "0.35rem", flexShrink: 0 }}>
+                    <div className="cand-actions">
                       <Link href={`/candidature/${c.id}`} style={{ textDecoration: "none" }}>
                         <button style={{
                           background: "var(--cyan-dim)",

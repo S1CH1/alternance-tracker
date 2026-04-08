@@ -184,10 +184,7 @@ export default function RappelsPage() {
   };
 
   return (
-    <div
-      className="grid-bg"
-      style={{ minHeight: "calc(100vh - 64px)", padding: "2rem" }}
-    >
+    <div className="grid-bg page-pad">
       <div style={{ maxWidth: "900px", margin: "0 auto" }}>
         {/* Header */}
         <motion.div

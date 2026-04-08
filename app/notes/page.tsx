@@ -124,10 +124,7 @@ export default function NotesPage() {
   };
 
   return (
-    <div
-      className="grid-bg"
-      style={{ minHeight: "calc(100vh - 64px)", padding: "2rem" }}
-    >
+    <div className="grid-bg page-pad">
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
         {/* Header */}
         <motion.div
@@ -190,14 +187,7 @@ export default function NotesPage() {
         </motion.div>
 
         {/* Contenu principal */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "280px 1fr",
-            gap: "1.5rem",
-            minHeight: "600px",
-          }}
-        >
+        <div className="notes-layout">
           {/* Liste des notes */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
