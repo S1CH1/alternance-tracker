@@ -268,10 +268,12 @@ export default function CandidatureDetail() {
             padding: "1.5rem",
             marginBottom: "1.25rem",
             position: "relative",
-            overflow: "hidden",
+            borderTop: "2px solid transparent",
+            backgroundImage: "linear-gradient(var(--surface), var(--surface)), linear-gradient(90deg, var(--cyan), var(--purple))",
+            backgroundClip: "padding-box, border-box",
+            backgroundOrigin: "border-box",
           }}
         >
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "linear-gradient(90deg, var(--cyan), var(--purple))" }} />
 
           <div className="detail-header-row">
             <div style={{ flex: 1, minWidth: 0 }}>
