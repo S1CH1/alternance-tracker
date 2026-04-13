@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readFile } from "fs/promises";
+import { stat } from "fs/promises";
+import { createReadStream } from "fs";
 import path from "path";
+import { Readable } from "stream";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   try {
@@ -12,22 +14,31 @@ export async function GET(
 
     // Sécurité : empêcher la traversée de répertoire
     const safeFilename = path.basename(filename);
-    const filepath = path.join(process.cwd(), "uploads", safeFilename);
-
-    // Vérification que le fichier est bien dans le dossier uploads
     const uploadsDir = path.resolve(process.cwd(), "uploads");
-    const resolvedPath = path.resolve(filepath);
+    const resolvedPath = path.resolve(path.join(uploadsDir, safeFilename));
+
     if (!resolvedPath.startsWith(uploadsDir)) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
 
-    const file = await readFile(resolvedPath);
+    const fileStat = await stat(resolvedPath);
 
-    return new NextResponse(file, {
+    // Vérifier si le client a déjà la version en cache (ETag)
+    const etag = `"${fileStat.mtime.getTime()}-${fileStat.size}"`;
+    if (request.headers.get("if-none-match") === etag) {
+      return new NextResponse(null, { status: 304 });
+    }
+
+    const stream = createReadStream(resolvedPath);
+    const webStream = Readable.toWeb(stream) as ReadableStream;
+
+    return new NextResponse(webStream, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": "inline",
-        "Cache-Control": "private, max-age=3600",
+        "Content-Length": String(fileStat.size),
+        "Cache-Control": "private, max-age=86400",
+        "ETag": etag,
       },
     });
   } catch (error) {
