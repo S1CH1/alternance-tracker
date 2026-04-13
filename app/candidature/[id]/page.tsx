@@ -304,7 +304,7 @@ export default function CandidatureDetail() {
                     <div key={key} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                       <span style={{ color: "var(--muted)", flexShrink: 0 }}>{icon}</span>
                       <input
-                        value={editForm[key as keyof typeof editForm]}
+                        value={(editForm[key as keyof typeof editForm] as string) ?? ""}
                         onChange={(e) => setEditForm((prev) => ({ ...prev, [key]: e.target.value }))}
                         placeholder={placeholder}
                         style={{
