@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Plus, Briefcase, StickyNote, Bell, Menu, X } from "lucide-react";
+import { Plus, Briefcase, StickyNote, Bell, Menu, X, BarChart2 } from "lucide-react";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -15,6 +15,7 @@ export default function Navbar() {
 
   const links = [
     { href: "/", label: "Dashboard" },
+    { href: "/stats", label: "Stats", icon: <BarChart2 size={15} /> },
     { href: "/notes", label: "Notes", icon: <StickyNote size={15} /> },
     { href: "/rappels", label: "Rappels", icon: <Bell size={15} /> },
   ];

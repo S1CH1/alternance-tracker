@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, StickyNote, Bell, Plus } from "lucide-react";
+import { LayoutDashboard, StickyNote, Bell, Plus, BarChart2 } from "lucide-react";
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
 
   const tabs = [
     { href: "/", icon: <LayoutDashboard size={20} />, label: "Offres" },
+    { href: "/stats", icon: <BarChart2 size={20} />, label: "Stats" },
     { href: "/notes", icon: <StickyNote size={20} />, label: "Notes" },
     { href: "/rappels", icon: <Bell size={20} />, label: "Rappels" },
   ];

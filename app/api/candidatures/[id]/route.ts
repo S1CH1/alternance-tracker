@@ -35,9 +35,9 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { statut, notes, ville, entreprise, poste, lienOffre, dateEnvoi } = body;
+    const { statut, notes, ville, entreprise, poste, lienOffre, dateEnvoi, cvPath, lmPath, offrePdfPath } = body;
 
-    const data: Record<string, string> = {};
+    const data: Record<string, string | null> = {};
     if (statut !== undefined) data.statut = statut;
     if (notes !== undefined) data.notes = notes;
     if (ville !== undefined) data.ville = ville;
@@ -45,6 +45,9 @@ export async function PATCH(
     if (poste !== undefined) data.poste = poste;
     if (lienOffre !== undefined) data.lienOffre = lienOffre;
     if (dateEnvoi !== undefined) data.dateEnvoi = dateEnvoi;
+    if (cvPath !== undefined) data.cvPath = cvPath;
+    if (lmPath !== undefined) data.lmPath = lmPath;
+    if (offrePdfPath !== undefined) data.offrePdfPath = offrePdfPath;
 
     const candidature = await prisma.candidature.update({
       where: { id: parseInt(id) },

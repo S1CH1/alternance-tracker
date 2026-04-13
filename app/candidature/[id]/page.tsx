@@ -26,6 +26,7 @@ import {
   Clock,
 } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
+import FileUpload from "@/components/FileUpload";
 
 interface Candidature {
   id: number;
@@ -82,7 +83,16 @@ export default function CandidatureDetail() {
   const [showStatutMenu, setShowStatutMenu] = useState(false);
   const [changingStatut, setChangingStatut] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [editForm, setEditForm] = useState({ entreprise: "", poste: "", ville: "", lienOffre: "", dateEnvoi: "" });
+  const [editForm, setEditForm] = useState({
+    entreprise: "",
+    poste: "",
+    ville: "",
+    lienOffre: "",
+    dateEnvoi: "",
+    cvPath: null as string | null,
+    lmPath: null as string | null,
+    offrePdfPath: null as string | null,
+  });
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Entretiens
@@ -105,6 +115,9 @@ export default function CandidatureDetail() {
           ville: data.ville || "",
           lienOffre: data.lienOffre || "",
           dateEnvoi: data.dateEnvoi.slice(0, 10),
+          cvPath: data.cvPath || null,
+          lmPath: data.lmPath || null,
+          offrePdfPath: data.offrePdfPath || null,
         });
       } catch {
         router.push("/");
@@ -153,6 +166,9 @@ export default function CandidatureDetail() {
           ville: editForm.ville || null,
           lienOffre: editForm.lienOffre || null,
           dateEnvoi: new Date(editForm.dateEnvoi).toISOString(),
+          cvPath: editForm.cvPath,
+          lmPath: editForm.lmPath,
+          offrePdfPath: editForm.offrePdfPath,
         }),
       });
       const updated = await res.json();
@@ -359,7 +375,7 @@ export default function CandidatureDetail() {
               {editMode ? (
                 <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                   <button
-                    onClick={() => { setEditMode(false); setEditForm({ entreprise: candidature.entreprise, poste: candidature.poste, ville: candidature.ville || "", lienOffre: candidature.lienOffre || "", dateEnvoi: candidature.dateEnvoi.slice(0, 10) }); }}
+                    onClick={() => { setEditMode(false); setEditForm({ entreprise: candidature.entreprise, poste: candidature.poste, ville: candidature.ville || "", lienOffre: candidature.lienOffre || "", dateEnvoi: candidature.dateEnvoi.slice(0, 10), cvPath: candidature.cvPath || null, lmPath: candidature.lmPath || null, offrePdfPath: candidature.offrePdfPath || null }); }}
                     style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "8px", padding: "0.5rem 1rem", color: "var(--muted)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem" }}
                   >
                     <X size={14} /> Annuler
@@ -773,60 +789,113 @@ export default function CandidatureDetail() {
           transition={{ duration: 0.4, delay: 0.22 }}
           style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}
         >
-          {[
-            { label: "CV", path: candidature.cvPath },
-            { label: "Lettre de motivation", path: candidature.lmPath },
-            { label: "Offre (PDF)", path: candidature.offrePdfPath },
-          ].map(({ label, path }) =>
-            path ? (
-              <div
-                key={label}
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "12px",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    padding: "0.875rem 1.5rem",
-                    borderBottom: "1px solid var(--border)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    color: "var(--cyan)",
-                    fontSize: "0.8rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                  }}
-                >
-                  <FileText size={14} />
-                  {label}
-                </div>
-                <iframe
-                  src={`/api/files/${path}`}
-                  style={{ width: "100%", height: "600px", border: "none", background: "#fff" }}
-                  title={label}
-                />
-              </div>
-            ) : null
-          )}
-
-          {!candidature.cvPath && !candidature.lmPath && !candidature.offrePdfPath && (
+          {editMode ? (
             <div
               style={{
-                textAlign: "center",
-                padding: "2rem",
                 background: "var(--surface)",
-                border: "1px dashed var(--border)",
+                border: "1px solid var(--border)",
                 borderRadius: "12px",
-                color: "var(--muted)",
-                fontSize: "0.875rem",
+                padding: "1.25rem 1.5rem",
               }}
             >
-              Aucun document uploadé pour cette candidature.
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  color: "var(--muted)",
+                  fontSize: "0.8rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  marginBottom: "1rem",
+                }}
+              >
+                <FileText size={14} />
+                Documents
+              </div>
+              <div className="doc-upload-grid">
+                <FileUpload
+                  label="CV"
+                  onUpload={(p) => setEditForm((prev) => ({ ...prev, cvPath: p || null }))}
+                  currentPath={editForm.cvPath || undefined}
+                />
+                <FileUpload
+                  label="Lettre de motivation"
+                  onUpload={(p) => setEditForm((prev) => ({ ...prev, lmPath: p || null }))}
+                  currentPath={editForm.lmPath || undefined}
+                />
+                <FileUpload
+                  label="Offre (PDF)"
+                  onUpload={(p) => setEditForm((prev) => ({ ...prev, offrePdfPath: p || null }))}
+                  currentPath={editForm.offrePdfPath || undefined}
+                />
+              </div>
             </div>
+          ) : (
+            <>
+              {[
+                { label: "CV", path: candidature.cvPath },
+                { label: "Lettre de motivation", path: candidature.lmPath },
+                { label: "Offre (PDF)", path: candidature.offrePdfPath },
+              ].map(({ label, path }) =>
+                path ? (
+                  <div
+                    key={label}
+                    style={{
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "12px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: "0.875rem 1.5rem",
+                        borderBottom: "1px solid var(--border)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        color: "var(--cyan)",
+                        fontSize: "0.8rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.1em",
+                      }}
+                    >
+                      <FileText size={14} />
+                      {label}
+                    </div>
+                    <iframe
+                      src={`/api/files/${path}`}
+                      style={{ width: "100%", height: "600px", border: "none", background: "#fff" }}
+                      title={label}
+                    />
+                  </div>
+                ) : null
+              )}
+
+              {!candidature.cvPath && !candidature.lmPath && !candidature.offrePdfPath && (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "2rem",
+                    background: "var(--surface)",
+                    border: "1px dashed var(--border)",
+                    borderRadius: "12px",
+                    color: "var(--muted)",
+                    fontSize: "0.875rem",
+                  }}
+                >
+                  Aucun document uploadé.{" "}
+                  <button
+                    onClick={() => setEditMode(true)}
+                    style={{ background: "none", border: "none", color: "var(--cyan)", cursor: "pointer", fontSize: "0.875rem", textDecoration: "underline" }}
+                  >
+                    Modifier la candidature
+                  </button>{" "}
+                  pour en ajouter.
+                </div>
+              )}
+            </>
           )}
         </motion.div>
       </div>
