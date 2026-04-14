@@ -174,7 +174,7 @@ export default function Dashboard() {
 
   return (
     <div className="grid-bg dashboard-pad">
-      <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
+      <div style={{ maxWidth: "1600px", margin: "0 auto" }}>
 
         {/* Header */}
         <motion.div

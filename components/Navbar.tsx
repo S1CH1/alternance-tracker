@@ -42,7 +42,7 @@ export default function Navbar() {
             alignItems: "center",
             justifyContent: "space-between",
             width: "100%",
-            maxWidth: "1400px",
+            maxWidth: "1600px",
             margin: "0 auto",
           }}
         >
